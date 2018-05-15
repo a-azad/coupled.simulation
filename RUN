@@ -1,0 +1,221 @@
+
+START_RUN=$(date +%s)
+
+# --------------------------------------------------------------
+
+cat<<END> runtime.tmp
+
+   Coupling took:  AAAA  seconds
+               or  BBBB  minutes 
+
+
+END
+
+
+cat<<END> date.inf
+base_files\date.par                        -input file
+END
+
+
+
+cat<<END> guide.tmp
+
+START
+vol_strain_flac_out\ev_NNNN.out		   - Name of the input file for Volumetric Strain (FLAC)
+tp_flac_in\temp_NNNN.flc	           - Name of the input file for Temperature (FLAC)
+inc_files\permi_0.inc		 	   - Name of the input file for initial Perm-i  (inc file)
+inc_files\permj_0.inc			   - Name of the input file for initial Perm-j  (inc file)
+inc_files\permk_0.inc			   - Name of the input file for initial Perm-k  (inc file)
+inc_files\poro_0.inc			   - Name of the input file for initial Porosity (inc file)
+inc_files\permi_MMMM.inc		   - Name of Perm-i output file
+inc_files\permj_MMMM.inc		   - Name of Perm-j output file
+inc_files\permk_MMMM.inc		   - Name of Perm-k output file
+inc_files\poro_MMMM.inc			   - Name of Poro   output file
+100,20   	  			   - Number of Blocks in i,k direction (STARS) i,j (FLAC)
+D            		      		   - k vector direction: U (for up) or D (for Down)
+-0.2                         		   - lower band for volumetric strain
+0.2                         		   - upper bad for volumetric strain
+15                           		   - temperature cut-off for porosity only
+
+
+
+END
+
+
+
+cat<<END> flac.tmp
+call run_NNNN.flc 
+END
+
+
+cat<<END> flc_base.tmp
+
+    sed -e "s/NNNN/RN/g"  base_files/base_FLAC > Sf.tmp
+    sed -e "s/MMMM/RM/g"  Sf.tmp   > run_RN.flc
+    sed -e "s/NNNN/RN/g"  flac.tmp > flac.ini
+    flac600.exe
+    rm flac.ini
+
+
+END
+
+
+cat<<END> info_temp.tmp
+
+START
+tp_stars_out\temp_RNNN.inc	    - Name of the input file
+tp_flac_in\temp_RNNN.flc	   - Name of the output file
+100,1,20                      - Number of Blocks in i,j,k direction
+11,6                          - (i,j) position of reservoir grid block in FLAC
+D                             - k vector direction: U (for up) or D (for Down)
+T                             - Variable (T: temprature, P: pressure, S: saturation)
+1                            - Which vertical slice to remove from a 3D model (j=?)
+10  			            - boundary values
+1  				   - Multiplier
+
+
+END
+
+
+
+
+cat<<END> info_pres.tmp
+
+START
+tp_stars_out\pres_RNNN.inc	   - Name of the input file
+tp_flac_in\pres_RNNN.flc	   - Name of the output file
+100,1,20                  	 - Number of Blocks in i,j,k direction
+11,6                       - (i,j) position of reservoir grid block in FLAC
+D                          - k vector direction: U (for up) or D (for Down)
+P                          - Variable (T: temprature, P: pressure, S: saturation)
+1                          - Which vertical slice to remove from a 3D model (j=?)
+650e3              - boundary values
+1000		         - Multiplier
+
+
+END
+
+
+
+
+
+
+cat<<END> base1.tmp
+
+    sed -e "s/NNNN/RN/g"  base_files/base_STARS > S.tmp
+    sed -e "s/MMMM/RM/g"  S.tmp   > run_RN.dat
+    st200911    -f run_RN.dat
+    report.exe  -f report.inp /o tmp.tmp
+
+END
+
+
+
+
+cat<<END> rep1.tmp
+
+*FILE           'run_RN.irf'
+*OUTPUT         'tp_stars_out/temp_RN.inc'
+*PROPERTY-FOR   'Temperature' TIME  *XYZLAYER  0
+
+*FILE           'run_RN.irf'
+*OUTPUT         'tp_stars_out/pres_RN.inc'
+*PROPERTY-FOR   'PRES'  TIME  *XYZLAYER  0
+
+
+END
+
+# =============================================
+
+
+date_provider.exe
+rm date.inf
+rm fname.tmp
+
+sed -e "s/NNNNNNNNNNNNN/0/g"  ini_prop/permi_0.inc > inc_files/permi_0.inc
+sed -e "s/NNNNNNNNNNNNN/0/g"  ini_prop/permj_0.inc > inc_files/permj_0.inc
+sed -e "s/NNNNNNNNNNNNN/0/g"  ini_prop/permk_0.inc > inc_files/permk_0.inc
+sed -e "s/NNNNNNNNNNNNN/0/g"  ini_prop/poro_0.inc  > inc_files/poro_0.inc 
+
+
+sed -e "s/NNNNNNNNNNNNN/0/g"  base_files/run_0_STARS > run_0.dat
+st200911  -f run_0.dat
+
+
+sed -e "s/NNNN/0/g"  flac.tmp > flac.ini
+sed -e "s/NNNNNNNNN/0/g"  base_files/run_0_FLAC > run_0.flc
+flac600.exe
+rm flac.ini
+
+
+sed -e "s/NNNNNNNNNNNNN/0/g"  inc_files/permi_0.inc > inc_files/permi_1.inc
+sed -e "s/NNNNNNNNNNNNN/0/g"  inc_files/permj_0.inc > inc_files/permj_1.inc
+sed -e "s/NNNNNNNNNNNNN/0/g"  inc_files/permk_0.inc > inc_files/permk_1.inc
+sed -e "s/NNNNNNNNNNNNN/0/g"  inc_files/poro_0.inc  > inc_files/poro_1.inc 
+
+
+
+# input Number of runs = XJ
+# Time fix = TM
+
+
+
+XI=1
+XJ=100
+
+TM=10
+DT=10
+
+while [ $XI -le $XJ ]
+do
+    
+    
+    sed -e "s/RN/$XI/g"         base1.tmp  > base2.tmp
+    sed -e "s/RM/$((XI-1))/g"   base2.tmp  > del.tmp     
+    
+    sed -e "s/RN/$XI/g"         rep1.tmp   > rep2.tmp
+    sed -e "s/TIME/$TM/g"       rep2.tmp   > report.inp
+    
+    bash  del.tmp
+    
+        
+    sed -e "s/RNNN/$XI/g"        info_temp.tmp  > info.par
+    st_to_flc.exe   
+    rm info.par
+    
+    
+    sed -e "s/RNNN/$XI/g"        info_pres.tmp  > info.par
+    st_to_flc.exe   
+    rm info.par    
+    
+    
+    sed -e "s/RN/$XI/g"         flc_base.tmp  > flc_base_2.tmp
+    sed -e "s/RM/$((XI-1))/g"   flc_base_2.tmp  > flac_r.tmp     
+    bash  flac_r.tmp
+
+    
+    sed -e "s/NNNN/$((XI))/g"    guide.tmp  > guide2.tmp     
+    sed -e "s/MMMM/$((XI+1))/g"  guide2.tmp  > guide.par
+    flc_to_str.exe
+    rm guide.par
+
+    
+    
+    
+    XI=$((XI+1))
+    TM=$((TM+DT))
+    
+done
+
+
+END_RUN=$(date +%s)
+
+DIFF_RUN_S=$(( ($END_RUN - $START_RUN) ))
+DIFF_RUN_M=$(( ($END_RUN - $START_RUN)/60 ))
+
+
+sed -e "s/AAAA/$DIFF_RUN_S/g"     runtime.tmp   > runtime2.tmp
+sed -e "s/BBBB/$DIFF_RUN_M/g"     runtime2.tmp  > runtime.log
+
+
+rm *.tmp
