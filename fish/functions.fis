@@ -1,0 +1,129 @@
+; --------------------   FISH FUNCTIONS Variables    -----------------------------------
+;
+;   Positive sxx (Pa)        			ex_1
+;   Positive syy (Pa)        			ex_2
+;   Positive sxy (Pa)        			ex_3
+;   Positive szz (Pa)        			ex_4
+;   Positive eff-sxx (Pa)       		ex_5
+;   Positive eff-syy (Pa)      			ex_6
+;   Positive eff-szz (Pa)      			ex_7
+;   Mohr circle plot-OC (Pa)  			ex_8
+;   Mohr circle plot-CF (Pa)  			ex_9
+;   Effective Sigma 3 (Pa)        		ex_10
+;   Effective Sigma 1 (Pa)             		ex_11
+;   q_prime (Pa)	       			ex_12
+;   p_prime (Pa)	       			ex_13
+;
+; -------------   Enter Data  ---------------------------   
+
+def data_entry
+   
+   pos_rat = 0.3
+
+
+end
+
+; -------------   Effective Stress ----------------------   
+
+def effective_stress
+
+    whilestepping
+    
+    loop i (1,izones)
+      
+      loop j (1,jzones)
+        
+        ex_1(i,j)=-sxx(i,j)
+        ex_2(i,j)=-syy(i,j)
+        ex_3(i,j)=-sxy(i,j)
+        ex_4(i,j)=-szz(i,j)
+        ex_5(i,j)=-(sxx(i,j) + pp(i,j))
+        ex_6(i,j)=-(syy(i,j) + pp(i,j))
+        ex_7(i,j)=-(szz(i,j) + pp(i,j))
+        ex_8(i,j)=-0.5*(sxx(i,j)+syy(i,j))
+        ex_9(i,j)=(0.25*(sxx(i,j)-syy(i,j))^2+(sxy(i,j))^2)^0.5
+        ex_10(i,j)=ex_8(i,j)-ex_9(i,j)-pp(i,j)                        
+        ex_11(i,j)=ex_8(i,j)+ex_9(i,j)-pp(i,j)                
+
+      end_loop
+    
+    end_loop
+
+end
+
+; -------------- Parameter Treatment --------------------   
+
+def stress_path
+
+   loop i(1,izones)
+	loop j(1,jzones)
+								
+	 ex_12(i,j)=(ex_11(i,j)-ex_10(i,j))/2	      
+	 ex_13(i,j)=(ex_11(i,j)+2*ex_10(i,j))/3			
+
+	end_loop
+   end_loop
+   
+end
+
+
+;---------------  Update Material Properties ------------
+
+def update_mat	
+
+   loop i(1,izones)
+      loop j(6,25)
+		
+	youngs=950*101000*(ex_10(i,j)/101000)^0.5	 
+	bulk_mod(i,j)=youngs/(3-6*pos_rat)			 
+ 	shear_mod(i,j)=youngs/(2+2*pos_rat)			 
+	friction(i,j)=55-14.93*log(ex_10(i,j)/101000)	        
+	dilation(i,j)=25.8-12.05*log(ex_10(i,j)/101000)	
+  	
+      end_loop
+   end_loop
+
+end
+
+; ---------------- Volumetric Strain Output --------------
+
+def ev_out
+
+	num=1
+	float ev_for_k 
+	array ev_for_k(2000)
+
+		loop j (6,25)
+		     loop i (11,110)
+			  ev_for_k(num)=string(vsi(i,j))
+			  num=num+1
+		      endloop
+		endloop
+	
+	status=open(_fil_name,1,1)
+	status=write(ev_for_k,2000)
+	status=close
+	
+end
+
+; ---------------------------------------------------------
+
+return
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

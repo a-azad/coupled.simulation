@@ -1,0 +1,72 @@
+; SAGD Modeling
+
+restore run_MMMM.sav
+
+
+; ---- Define Plastic Properties for the reservoir ONLY -------
+
+
+;model m th_i group 'reservoir' 
+;prop cond=1 spec=1 thexp=2.00E-05  group 'reservoir'
+;prop dil=15 fric=45  group 'reservoir'
+
+model ss th_i group 'reservoir' 
+prop cond=1 spec=1 thexp=2.00E-05  group 'reservoir'
+prop dil=15 fric=60  group 'reservoir'
+prop ftab 1 dtab 2  group 'reservoir'
+table 1 0 55.9 0.01 53.9 0.02 51.9 .05 45.8 0.08 39.7
+table 2 0 27.39 0.01 25.8 0.02 24.3 .05 19.7 0.08 15.1
+
+effective_stress
+stress_path
+update_mat
+
+; --------- Update Temprature and Pressure and material properties
+
+set echo off
+
+call tp_flac_in\temp_NNNN.flc
+call tp_flac_in\pres_NNNN.flc
+
+
+
+; -------------------- Run Fish Functions ------------------------
+
+
+set mech on thermal off flow off     ; Mechanical only calculation
+solve
+
+; -------------------- FISH Functions RUN ------------------------
+
+SET _fil_name 'vol_strain_flac_out\ev_NNNN.out'
+ev_out
+
+effective_stress
+stress_path
+
+
+; -------------------- Save For the Next Step --------------------
+
+save run_NNNN.sav
+quit
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
