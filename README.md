@@ -7,7 +7,7 @@
 This dataset and it associated codes facilitate multi-physics simulation and create a coupled model in a single automatic run. The algorithm used multiple .exe files to run numerical portion of simulation. The flow of data is managed in Linux (RUN) and embedded scripts in each step.
 
 ### Need Help?
-* [slides](guide_ver1.2.pdf) of a presentation that discusses the structure behind this simulation.
+* [Slides](guide_ver1.2.pdf) of a presentation that discusses the structure behind this simulation.
 * Read the [paper](https://www.onepetro.org/conference-paper/ARMA-11-414) resulted from this work.
 
 ![](first_slide.JPG)
